@@ -25,16 +25,29 @@ def get_order(order_id: int, auth: bool = Depends(require_admin)):
     if not conn:
         return {"error": "Database connection failed"}
     
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
-        order = cursor.fetchone()
+    try:
+        with conn.cursor() as cursor:
+            # Get order details
+            cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+            order = cursor.fetchone()
+            
+            if not order:
+                return {"error": "Order not found"}
+            
+            # Get all items for the order
+            cursor.execute(
+                "SELECT item_id, quantity FROM order_items WHERE order_id = %s",
+                (order_id,)
+            )
+            items = cursor.fetchall()
+        
+        return {"order": order, "items": items}
     
-    conn.close()
+    except Exception as e:
+        return {"error": str(e)}
     
-    if not order:
-        return {"error": "Order not found"}
-    
-    return {"order": order}
+    finally:
+        conn.close()
 
 
 class OrderCreate(BaseModel):
