@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends
+from fastapi import APIRouter,Depends,HTTPException
 from app.database import get_db_connection
 from app.auth import require_admin
 from pydantic import BaseModel
@@ -57,20 +57,37 @@ class OrderCreate(BaseModel):
 
 
 @router.post("/")
-def create_order(order: OrderCreate, auth: bool = Depends(require_admin)):
+def place_order(user_id: int):
+
     conn = get_db_connection()
     if not conn:
-        return {"error": "Database connection failed"}
+        raise HTTPException(status_code=500, detail="Database connection failed")
     
     with conn.cursor() as cursor:
-        cursor.execute(
-            "INSERT INTO orders (user_id, item_id, quantity, status) VALUES (%s, %s, %s,'pending')",
-            (order.user_id, order.item_id, order.quantity)
-        )
+        # Check if the cart is empty
+        cursor.execute("SELECT * FROM cart WHERE user_id = %s", (user_id,))
+        cart_items = cursor.fetchall()
+        if not cart_items:
+            raise HTTPException(status_code=400, detail="Cart is empty")
+
+        # Create a new order
+        cursor.execute("INSERT INTO orders (user_id, status) VALUES (%s, 'pending')", (user_id,))
+        order_id = cursor.lastrowid
+
+        # Move items from cart to order_items
+        for item in cart_items:
+            cursor.execute(
+                "INSERT INTO order_items (order_id, item_id, quantity) VALUES (%s, %s, %s)",
+                (order_id, item["item_id"], item["quantity"])
+            )
+
+        # Clear the cart
+        cursor.execute("DELETE FROM cart WHERE user_id = %s", (user_id,))
         conn.commit()
     
     conn.close()
-    return {"message": "Order placed successfully"}
+    return {"message": "Order placed successfully", "order_id": order_id}
+
 
 
 @router.patch("/{order_id}/status")
