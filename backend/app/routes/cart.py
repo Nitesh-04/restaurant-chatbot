@@ -1,3 +1,4 @@
+from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_db_connection
 from app.auth import require_admin
@@ -47,17 +48,43 @@ def add_to_cart(cart_item: CartItem, auth: bool = Depends(require_admin)):
     return {"message": "Item added to cart"}
 
 
-@router.patch("/{cart_id}")
-def update_cart(cart_id: int, quantity: int, auth: bool = Depends(require_admin)):
+class CartAction(str, Enum):
+    INCREASE = "increase"
+    DECREASE = "decrease"
 
+class CartUpdateRequest(BaseModel):
+    user_id: int
+    item_id: int
+    action: CartAction
+
+@router.patch("/")
+def manage_cart_item(update_request: CartUpdateRequest, auth: bool = Depends(require_admin)):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
-    
+
     with conn.cursor() as cursor:
-        cursor.execute("UPDATE cart SET quantity = %s WHERE id = %s", (quantity, cart_id))
+        # Check if item exists in cart
+        cursor.execute("SELECT quantity FROM cart WHERE user_id = %s AND item_id = %s", 
+                       (update_request.user_id, update_request.item_id))
+        item = cursor.fetchone()
+
+        if not item:
+            return {"error": "Item not found in cart"}
+        
+        if update_request.action == CartAction.INCREASE:
+            cursor.execute("UPDATE cart SET quantity = quantity + 1 WHERE user_id = %s AND item_id = %s", 
+                           (update_request.user_id, update_request.item_id))
+        else:
+            if item["quantity"] > 1:
+                cursor.execute("UPDATE cart SET quantity = quantity - 1 WHERE user_id = %s AND item_id = %s", 
+                               (update_request.user_id, update_request.item_id))
+            else:
+                cursor.execute("DELETE FROM cart WHERE user_id = %s AND item_id = %s", 
+                               (update_request.user_id, update_request.item_id))
+
         conn.commit()
-    
+
     conn.close()
     return {"message": "Cart updated"}
 
