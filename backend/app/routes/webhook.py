@@ -1,7 +1,11 @@
+from fastapi import APIRouter,Depends,HTTPException
 from typing import Dict
 from fastapi.responses import JSONResponse
+import os
+import httpx
 
-# Function to handle "order.add" intent
+router = APIRouter()
+
 async def handle_add_order(parameters: Dict):
     item_name = parameters.get("food-item")
     quantity = parameters.get("number")
@@ -10,7 +14,7 @@ async def handle_add_order(parameters: Dict):
 
     return JSONResponse(content={"fulfillmentText": f"{quantity} x {item_name} added to cart."})
 
-# Function to handle "order.remove" intent
+
 async def handle_remove_order(parameters: Dict):
     item_name = parameters.get("food-item")
 
@@ -20,9 +24,14 @@ async def handle_remove_order(parameters: Dict):
 
 async def handle_track_order(parameters: Dict):
 
-    orderId = parameters['order-id']
+    admin_key = os.getenv("ADMIN_KEY")
+    order_id = parameters.get("order-id")
 
-    #add logic to fetch the order details from the DB
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"https://api.example.com/track/{order_id}", headers={"admin-key": admin_key})
+        response_data = response.json()
 
-    return JSONResponse(content={"fulfillmentText": f"Received request to track order with ID : {orderId}"})
+    order_status = response_data.get("status")
+
+    return JSONResponse(content={"fulfillmentText": f"Order {order_id} is {order_status}."})
     
