@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Chatbot from "./_components/Chatbot";
 
 export const metadata: Metadata = {
   title: "Resturant-Chatbot",
@@ -8,16 +9,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body
-        className="antialiased"
-      >
+      <body>
         {children}
+          <Chatbot/>
       </body>
     </html>
-  );
+  )
 }
