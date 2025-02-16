@@ -1,37 +1,33 @@
-from fastapi import APIRouter,Depends,HTTPException
-from typing import Dict
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-import os
-import httpx
+from typing import Dict
+from app.services.orders import add_item, add_order, remove_item, track_order
 
 router = APIRouter()
 
-async def handle_add_order(parameters: Dict):
-    item_name = parameters.get("food-item")
-    quantity = parameters.get("number")
+# Intent to function mapping
+INTENT_HANDLERS = {
+    "order.add - context:ongoing-order": add_item,
+    "order.complete - context:ongoing-order": add_order,
+    "order.remove - context:ongoing-order": remove_item,
+    "track.order": track_order,
+}
 
-    #add logic to handle the order like saving to DB
 
-    return JSONResponse(content={"fulfillmentText": f"{quantity} x {item_name} added to cart."})
+@router.post("/webhook")
+async def handle_webhook(request: Dict):
+    try:
+        intent_name = request.get("queryResult", {}).get("intent", {}).get("displayName")
+        parameters = request.get("queryResult", {}).get("parameters", {})
 
+        if not intent_name:
+            return JSONResponse(content={"fulfillmentText": "Sorry, I couldn't understand that."})
 
-async def handle_remove_order(parameters: Dict):
-    item_name = parameters.get("food-item")
+        handler = INTENT_HANDLERS.get(intent_name)
+        if handler:
+            return await handler(parameters)
 
-    #add logic to handle the removal, such as checking the DB
+        return JSONResponse(content={"fulfillmentText": "I'm sorry, I didn't understand that."})
 
-    return JSONResponse(content={"fulfillmentText": f"{item_name} removed from cart."})
-
-async def handle_track_order(parameters: Dict):
-
-    admin_key = os.getenv("ADMIN_KEY")
-    order_id = parameters.get("order-id")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"https://api.example.com/track/{order_id}", headers={"admin-key": admin_key})
-        response_data = response.json()
-
-    order_status = response_data.get("status")
-
-    return JSONResponse(content={"fulfillmentText": f"Order {order_id} is {order_status}."})
-    
+    except Exception as e:
+        return JSONResponse(content={"fulfillmentText": "An error occurred while processing your request."})

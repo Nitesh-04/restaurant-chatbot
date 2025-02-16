@@ -89,7 +89,6 @@ def place_order(user_id: int):
     return {"message": "Order placed successfully", "order_id": order_id}
 
 
-
 @router.patch("/{order_id}/status")
 def update_order(order_id: int, auth: bool = Depends(require_admin)):
     conn = get_db_connection()

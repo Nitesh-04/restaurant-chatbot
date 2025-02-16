@@ -11,6 +11,18 @@ class CartItem(BaseModel):
     item_id: int
     quantity: int
 
+@router.get("/item/{item_name}")
+def get_item(item_name: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT id FROM menu WHERE item_name = %s", (item_name,))
+        id = cursor.fetchone()
+    
+    conn.close()
+    return id
 
 @router.get("/{user_id}")
 def view_cart(user_id: int, auth: bool = Depends(require_admin)):
