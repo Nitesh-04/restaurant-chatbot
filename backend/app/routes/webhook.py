@@ -14,7 +14,7 @@ INTENT_HANDLERS = {
 }
 
 
-@router.post("/webhook")
+@router.post("/")
 async def handle_webhook(request: Dict):
     try:
         intent_name = request.get("queryResult", {}).get("intent", {}).get("displayName")
