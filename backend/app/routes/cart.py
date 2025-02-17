@@ -1,5 +1,5 @@
 from enum import Enum
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.database import get_db_connection
 from app.auth import require_admin
 from pydantic import BaseModel
@@ -11,8 +11,8 @@ class CartItem(BaseModel):
     item_id: int
     quantity: int
 
-@router.get("/item/{item_name}")
-def get_item(item_name: str):
+@router.get("/item")
+def get_item(item_name: str = Query(...), auth: bool = Depends(require_admin)):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
@@ -22,7 +22,7 @@ def get_item(item_name: str):
         id = cursor.fetchone()
     
     conn.close()
-    return id
+    return {"item_id": id}
 
 @router.get("/{user_id}")
 def view_cart(user_id: int, auth: bool = Depends(require_admin)):
