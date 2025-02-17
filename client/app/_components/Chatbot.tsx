@@ -5,6 +5,7 @@ import { MessageCircle, X } from 'lucide-react'
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)
+  const chatboturl = process.env.NEXT_PUBLIC_WEBHOOK_URL
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -18,7 +19,7 @@ export default function Chatbot() {
             allow="microphone"
             width="350"
             height="430"
-            src="https://console.dialogflow.com/api-client/demo/embedded/92939191-397a-4094-b9c2-79af8147d002"
+            src={chatboturl}
             className="border rounded-t-lg bg-white"
           />
         </div>

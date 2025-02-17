@@ -38,7 +38,7 @@ export default function Menu() {
               key={item.id} 
               className="border rounded-lg p-4 shadow-md hover:shadow-lg transition"
             >
-              <h2 className="text-xl font-semibold mb-2">{item.name}</h2>
+              <h2 className="text-xl text-gray-600 font-semibold mb-2">{item.name}</h2>
               <p className="text-gray-600 mb-4">${item.price.toFixed(2)}</p>
               <button
                 onClick={() => addToCart(item)}
