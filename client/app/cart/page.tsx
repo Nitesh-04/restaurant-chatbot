@@ -9,18 +9,50 @@ import Link from 'next/link'
 export default function Cart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
 
+  
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart')
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart))
+    const fetchCart = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/cart/11',{
+          headers: {
+            'admin-key': `${process.env.NEXT_PUBLIC_AUTH_KEY}`,
+          },
+        })
+        const data = await response.json()
+
+        if (data.cart) {
+          setCartItems(data.cart)
+        }
+      } catch (error) {
+        console.error('Error fetching cart:', error)
+      }
     }
+
+    fetchCart()
   }, [])
 
-  const removeFromCart = (itemId: number) => {
+  const removeFromCart = async (itemId: number) => {
     const newCart = cartItems.filter(item => item.id !== itemId)
     setCartItems(newCart)
     localStorage.setItem('cart', JSON.stringify(newCart))
+  
+    const userId = 11
+  
+    try {
+      await fetch(`http://127.0.0.1:8000/cart?user_id=${userId}&item_id=${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'admin-key': `${process.env.NEXT_PUBLIC_AUTH_KEY}`,
+        },
+      })
+      console.log('Item removed from cart')
+    } catch (error) {
+      console.error('Error removing item from cart on the server:', error)
+    }
   }
+  
+  
 
   const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
@@ -48,9 +80,9 @@ export default function Cart() {
                 className="flex justify-between items-center border-b py-4"
               >
                 <div>
-                  <h2 className="text-xl font-semibold">{item.name}</h2>
+                  {item.id}<h2 className="text-xl text-gray-600 font-semibold"> {item.item_name}</h2>
                   <p className="text-gray-600">
-                    ${item.price.toFixed(2)} x {item.quantity}
+                    Rs.{item.price.toFixed(2)} x {item.quantity}
                   </p>
                 </div>
                 <button
@@ -62,14 +94,14 @@ export default function Cart() {
               </div>
             ))}
             
-            <div className="mt-8 flex justify-between items-center">
-              <p className="text-xl font-semibold">
-                Total: ${total.toFixed(2)}
+            <div className="mt-8 flex justify-start gap-10 items-center">
+              <p className="text-xl text-gray-600 font-semibold">
+                Total: Rs.{total.toFixed(2)}
               </p>
               <button
                 className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600"
               >
-                Checkout
+                Order
               </button>
             </div>
           </div>
