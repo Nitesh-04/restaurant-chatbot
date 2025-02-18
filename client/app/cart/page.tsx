@@ -8,10 +8,9 @@ import Link from 'next/link'
 
 export default function Cart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
-
   
   useEffect(() => {
-    const fetchCart = async () => {
+    async function fetchCart() {
       try {
         const response = await fetch('http://127.0.0.1:8000/cart/11',{
           headers: {
@@ -31,7 +30,7 @@ export default function Cart() {
     fetchCart()
   }, [])
 
-  const removeFromCart = async (itemId: number) => {
+  async function removeFromCart (itemId: number) {
     const newCart = cartItems.filter(item => item.id !== itemId)
     setCartItems(newCart)
     localStorage.setItem('cart', JSON.stringify(newCart))
@@ -51,8 +50,35 @@ export default function Cart() {
       console.error('Error removing item from cart on the server:', error)
     }
   }
-  
-  
+
+  async function placeOrder()
+  {
+      const userId = 11; 
+      const payload = {
+        user_id: userId,
+      };
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'admin-key': `${process.env.NEXT_PUBLIC_AUTH_KEY}`,
+          },
+          body: JSON.stringify(payload),
+        });
+    
+        if (!response.ok) {
+          throw new Error('Failed to order');
+        }
+        
+        console.log('Order placed successfully');
+      }
+      catch (error) {
+        console.error('Error placing order:', error)
+      }
+
+  }
 
   const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
@@ -98,7 +124,7 @@ export default function Cart() {
               <p className="text-xl text-gray-600 font-semibold">
                 Total: Rs.{total.toFixed(2)}
               </p>
-              <button
+              <button onClick={placeOrder}
                 className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600"
               >
                 Order

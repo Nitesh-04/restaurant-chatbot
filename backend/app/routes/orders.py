@@ -50,14 +50,12 @@ def get_order(order_id: int, auth: bool = Depends(require_admin)):
         conn.close()
 
 
-class OrderCreate(BaseModel):
+class OrderRequest(BaseModel):
     user_id: int
-    item_id: int
-    quantity: int
 
 
 @router.post("/")
-def place_order(user_id: int):
+def place_order(order:OrderRequest, auth: bool = Depends(require_admin)):
 
     conn = get_db_connection()
     if not conn:
@@ -65,13 +63,13 @@ def place_order(user_id: int):
     
     with conn.cursor() as cursor:
         # Check if the cart is empty
-        cursor.execute("SELECT * FROM cart WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT * FROM cart WHERE user_id = %s", (order.user_id,))
         cart_items = cursor.fetchall()
         if not cart_items:
             raise HTTPException(status_code=400, detail="Cart is empty")
 
         # Create a new order
-        cursor.execute("INSERT INTO orders (user_id, status) VALUES (%s, 'pending')", (user_id,))
+        cursor.execute("INSERT INTO orders (user_id, status) VALUES (%s, 'pending')", (order.user_id,))
         order_id = cursor.lastrowid
 
         # Move items from cart to order_items
@@ -82,7 +80,7 @@ def place_order(user_id: int):
             )
 
         # Clear the cart
-        cursor.execute("DELETE FROM cart WHERE user_id = %s", (user_id,))
+        cursor.execute("DELETE FROM cart WHERE user_id = %s", (order.user_id,))
         conn.commit()
     
     conn.close()
