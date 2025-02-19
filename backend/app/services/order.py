@@ -15,9 +15,6 @@ async def add_item(parameters: Dict):
         return JSONResponse(content={"fulfillmentText": "Please specify a quantity for each item."})
     
     item_ids=[]
-
-    print(item_names)
-    print(quantities)
     
     async with httpx.AsyncClient() as client:
         for item in item_names:
@@ -38,8 +35,6 @@ async def add_item(parameters: Dict):
                 print(f"Request failed: {e}")
     
     added_items = []  
-
-    print(item_ids)
 
     async with httpx.AsyncClient() as client:
         for (item_id,item_name), quantity in zip(item_ids, quantities):
